@@ -12,8 +12,6 @@ public class Saw {
     private double rot;
     private double positionX;
     private double positionZ;
-    private double directionX;
-    private double directionY;
     private double movBuff=0;
     private final Rotate spin = new Rotate(0, Rotate.Z_AXIS);
     private final Rotate orientation = new Rotate(0,Rotate.Y_AXIS);
@@ -45,6 +43,12 @@ public class Saw {
     public void rotate(double rot){
         orientation.setAngle(rot);
 
+    }
+    public double getX(){
+        return this.positionX;
+    }
+    public double getZ(){
+        return this.positionZ;
     }
 
 }
