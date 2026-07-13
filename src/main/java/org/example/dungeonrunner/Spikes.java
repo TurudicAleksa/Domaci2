@@ -59,14 +59,17 @@ public class Spikes {
     }
     public void update(double dt){
         movBuff+=dt;
-        double t = (Math.sin(movBuff*moveSpd) + 1) / 2.0;
+        double t = (Math.sin(movBuff*moveSpd) + 1)/2 ;
         slide.setY(t * Constants.CELL_SIZE );
     }
-    public double getX() { return positionX; }
-    public double getZ() { return positionZ; }
+    public double getX() { return s.getBoundsInParent().getCenterX(); }
+    public double getZ() { return s.getBoundsInParent().getCenterZ(); }
     public boolean isDangerous() {
 
-        return s.getBoundsInParent().getCenterY()<1.5;
+        double t = (Math.sin(movBuff * moveSpd) + 1) / 2.0;
+
+        return t < 0.3;
+
 
     }
 }

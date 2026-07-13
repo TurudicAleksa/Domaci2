@@ -1,6 +1,7 @@
 package org.example.dungeonrunner;
 
 
+import javafx.geometry.Point3D;
 import javafx.scene.Group;
 import javafx.scene.shape.Box;
 import javafx.scene.transform.Rotate;
@@ -45,10 +46,14 @@ public class Saw {
 
     }
     public double getX(){
-        return this.positionX;
+        Rotate temp = new Rotate(orientation.getAngle(), Rotate.Y_AXIS);
+        Point3D dir = temp.transform(1, 0, 0);
+        return positionX + slide.getX() * dir.getX();
     }
     public double getZ(){
-        return this.positionZ;
+        Rotate temp = new Rotate(orientation.getAngle(), Rotate.Y_AXIS);
+        Point3D dir = temp.transform(1, 0, 0);
+        return positionZ + slide.getX() * dir.getZ();
     }
 
 }
