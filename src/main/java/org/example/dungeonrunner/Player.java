@@ -15,6 +15,8 @@ public class Player {
     private boolean rotateLeft;
     private boolean rotateRight;
     private int lives=3;
+    private int poisoned=0;
+    private DoorKey door;
 
     public Player ( double startX, double startY ) {
         this.positionX = startX;
@@ -23,6 +25,17 @@ public class Player {
         this.startY=startY;
         this.directionX =  1.0;
         this.directionY =  0.0;
+    }
+
+    public void setDoor(DoorKey door) {
+        this.door = door;
+    }
+
+    private boolean isClosed(int x, int y) {
+        return door != null
+                && door.getDoorCol() == x
+                && door.getDoorRow() == y
+                && !door.isOpen();
     }
 
     public double getPositionX ( ) { return this.positionX; }
@@ -36,9 +49,19 @@ public class Player {
     public void setRotateRight  ( boolean newValue ) { this.rotateRight  = newValue; }
 
     public void update ( DungeonMap map ) {
+        if(poisoned>0) poisoned--;
         if ( this.moveForward ) {
-            double newX = this.positionX + this.directionX * Constants.PLAYER_MOVE_SPEED;
-            double newY = this.positionY + this.directionY * Constants.PLAYER_MOVE_SPEED;
+            double newX,newY;
+            if(poisoned>0){
+                newX = this.positionX - this.directionX * Constants.PLAYER_MOVE_SPEED;
+                newY = this.positionY - this.directionY * Constants.PLAYER_MOVE_SPEED;
+            }
+            else{
+                newX = this.positionX + this.directionX * Constants.PLAYER_MOVE_SPEED;
+                newY = this.positionY + this.directionY * Constants.PLAYER_MOVE_SPEED;
+            }
+
+
 
             if ( canMoveTo ( newX, positionY, map ) ) {
                 this.positionX = newX;
@@ -50,8 +73,16 @@ public class Player {
         }
 
         if ( this.moveBackward ) {
-            double newX = this.positionX - this.directionX * Constants.PLAYER_MOVE_SPEED;
-            double newY = this.positionY - this.directionY * Constants.PLAYER_MOVE_SPEED;
+            double newX,newY;
+            if(poisoned==0){
+                newX = this.positionX - this.directionX * Constants.PLAYER_MOVE_SPEED;
+                newY = this.positionY - this.directionY * Constants.PLAYER_MOVE_SPEED;
+            }
+            else{
+                newX = this.positionX + this.directionX * Constants.PLAYER_MOVE_SPEED;
+                newY = this.positionY + this.directionY * Constants.PLAYER_MOVE_SPEED;
+            }
+
 
             if ( canMoveTo ( newX, positionY, map ) ) {
                 this.positionX = newX;
@@ -63,10 +94,17 @@ public class Player {
         }
 
         if ( this.rotateLeft ) {
-            rotate ( Constants.PLAYER_ROTATION_SPEED );
+            if(poisoned>0){
+                rotate ( -Constants.PLAYER_ROTATION_SPEED );
+            }
+            else
+                rotate ( Constants.PLAYER_ROTATION_SPEED );
         }
         if ( this.rotateRight ) {
-            rotate ( -Constants.PLAYER_ROTATION_SPEED );
+            if(poisoned>0)
+                rotate ( Constants.PLAYER_ROTATION_SPEED );
+            else
+                rotate ( -Constants.PLAYER_ROTATION_SPEED );
         }
     }
 
@@ -85,8 +123,11 @@ public class Player {
 
     private boolean isFree(int x, int y, DungeonMap map) {
         int tile = map.get(x, y);
-        if (tile == Constants.EXIT) {
+        if (tile == Constants.EXIT ) {
             return exitUnlocked;
+        }
+        if (tile == Constants.EMPTY && isClosed(x,y)) {
+            return false;
         }
         return tile == Constants.EMPTY;
     }
@@ -105,5 +146,11 @@ public class Player {
     }
     public int getLives(){
         return lives;
+    }
+    public void addLife(){
+        lives++;
+    }
+    public void poison(){
+        this.poisoned=250;
     }
 }

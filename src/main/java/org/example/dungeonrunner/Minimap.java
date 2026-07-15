@@ -24,6 +24,7 @@ public class Minimap {
     private Group g = new Group();
     private Rectangle end;
     private Circle key;
+    private Circle lever;
     public Minimap(int cols, int rows){
         map = new Object[cols][rows];
         sizeX=cols*20;
@@ -89,4 +90,9 @@ public class Minimap {
     public void removeKey(){
         key.setVisible(false);
     }
+    public void addLever(double posX, double posY, Color col){
+        lever = new Circle(posX*20+10,posY*20+10,5,col);
+        g.getChildren().add(lever);
+    }
+    public void removeLever() {lever.setVisible(false);}
 }

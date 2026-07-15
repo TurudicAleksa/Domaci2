@@ -22,6 +22,7 @@ import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class DungeonRunner extends Application {
 
@@ -34,12 +35,21 @@ public class DungeonRunner extends Application {
     private AnimationTimer timer;
     private ArrayList<Saw> saws = new ArrayList<>();
     private ArrayList<Spikes> spikes = new ArrayList<>();
+    private ArrayList<Heart> hearts = new ArrayList<>();
+    private ArrayList<Shield> shields = new ArrayList<>();
+    private ArrayList<Potion> potions = new ArrayList<>();
+    private DoorKey doorKey;
+    private Sphere shieldSphere;
     public Minimap minimap;
     private Box exitBox;
     private Key key;
-    private Stage stage; // NEW: kept so showLevelSelect()/startGame() can swap scenes on it
+    private Stage stage;
+    int invincible=0;
+    int invul=0;
     double seconds = 0;
     double minutes = 0;
+    double shieldTime=0;
+    Group spawnables = new Group();
     Patrol p;
 
     private void buildDungeon (int[][] mapC ) {
@@ -150,7 +160,12 @@ public class DungeonRunner extends Application {
                 }
             }
         }
-        int sawx1=0, sawy2=0, sawx2=0, sawy1=0, spx1=0, spy1=0, kx1=0, ky1=0;
+        double[] x = new double[]{0};
+        double[] y = new double[]{0};
+        double[] lx = new double[]{0};
+        double[] ly = new double[]{0};
+        int dx=0,dy=0;
+        int sawx1=0, sawy2=0, sawx2=0, sawy1=0, spx1=0, spy1=0, kx1=0, ky1=0,px1=0,py1=0;
         if(mapC==Constants.MAP){
             sawx1=0;
             sawy1=3;
@@ -160,6 +175,14 @@ public class DungeonRunner extends Application {
             spy1=2;
             kx1=2;
             ky1=6;
+            px1=5;
+            py1=2;
+            dx=4;
+            dy=6;
+            lx= new double[]{4,5,6,7};
+            ly= new double[]{6,6,6,6};
+            y = new double[]{2, 3, 4, 4, 4, 3, 2,1,1,1};
+            x = new double[]{5, 5, 5, 6, 7, 7, 7,7,6,5};
         }
         if(mapC==Constants.MAP2){
             sawx1=3;
@@ -170,6 +193,14 @@ public class DungeonRunner extends Application {
             spy1=5;
             kx1=3;
             ky1=1;
+            px1=6;
+            py1=4;
+            dx=5;
+            dy=6;
+            lx= new double[]{1,2,3,4,5};
+            ly= new double[]{6,6,6,6,6};
+            y = new double[]{4, 5, 6, 5, 4};
+            x = new double[]{6, 6, 6, 6, 6};
         }
         if(mapC==Constants.MAP3){
             sawx1=0;
@@ -180,6 +211,14 @@ public class DungeonRunner extends Application {
             spy1=6;
             kx1=7;
             ky1=2;
+            px1=1;
+            py1=6;
+            dx=4;
+            dy=2;
+            lx= new double[]{4,5,5,6,7,7};
+            ly= new double[]{2,2,1,1,1,2};
+            y = new double[]{6, 5, 4, 3, 2,2,3,4,5,6};
+            x = new double[]{1, 1, 1, 1, 1,1,1,1,1,1};
         }
         Saw saw1 = new Saw(sawx1 * Constants.CELL_SIZE + Constants.CELL_SIZE,
                 sawy1 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0);
@@ -207,13 +246,21 @@ public class DungeonRunner extends Application {
         this.world.getChildren().add(key.get());
         minimap.addKey(kx1,ky1);
 
-        p = new Patrol(1 * Constants.CELL_SIZE+ Constants.CELL_SIZE / 2.0,
-                2 * Constants.CELL_SIZE+ Constants.CELL_SIZE / 2.0);
+        p = new Patrol(px1 * Constants.CELL_SIZE+ Constants.CELL_SIZE / 2.0,
+                py1 * Constants.CELL_SIZE+ Constants.CELL_SIZE / 2.0);
         this.world.getChildren().add(p.get());
-        double[] y = {2,3,4,4,4,3,2};
-        double[] x = {1,1,1,2,1,1,1};
+
         p.addPath(x,y);
 
+        this.world.getChildren().add(spawnables);
+        double[] l = RandomPosition.findRandomLeverPos(map,lx,ly);
+        doorKey = new DoorKey();
+        doorKey.setDoorPosition(dx, dy);
+        doorKey.setLeverPosition((int)l[0], (int)l[1]);
+        minimap.addLever((int)l[0], (int)l[1],doorKey.getColor());
+        this.world.getChildren().add(doorKey.get());
+
+        player.setDoor(doorKey);
 
 
     }
@@ -244,6 +291,15 @@ public class DungeonRunner extends Application {
         this.camera.setFieldOfView ( Constants.CAMERA_FIELD_OF_VIEW );
 
         this.cameraMount = new Group ( this.camera );
+        double shieldRadius = Constants.CAMERA_NEAR_CLIP * 8;
+        shieldSphere = new Sphere(shieldRadius);
+        shieldSphere.setCullFace(CullFace.NONE);
+        PhongMaterial shieldMat = new PhongMaterial(Color.rgb(60, 20, 255, 0.15));
+        shieldMat.setSpecularColor(Color.rgb(0, 0, 255, 0.4));
+        shieldSphere.setMaterial(shieldMat);
+        shieldSphere.setMouseTransparent(true);
+        shieldSphere.setVisible(false);
+        cameraMount.getChildren().add(shieldSphere);
 
 
         minimap.get().setTranslateZ(40);
@@ -264,25 +320,81 @@ public class DungeonRunner extends Application {
         double playerWorldZ = player.getPositionY() * Constants.CELL_SIZE;
         double playerHitRadius = Constants.PLAYER_RADIUS * Constants.CELL_SIZE;
 
-        for (Saw saw : saws) {
-            double dx = playerWorldX - saw.getX();
-            double dz = playerWorldZ - saw.getZ();
-            double distSq = dx * dx + dz * dz;
-            double hitDist = Constants.CELL_SIZE * 0.2 + playerHitRadius;
-            if (distSq < hitDist * hitDist) {
-                return true;
+            for (Saw saw : saws) {
+                double dx = playerWorldX - saw.getX();
+                double dz = playerWorldZ - saw.getZ();
+                double distSq = dx * dx + dz * dz;
+                double hitDist = Constants.CELL_SIZE * 0.2 + playerHitRadius;
+                if (distSq < hitDist * hitDist) {
+                    if(invincible>0){
+                        invincible=0;
+                        invul=2;
+                        return false;
+                    }
+                    if(invul>0) return false;
+                    return true;
+                }
+            }
+
+            for (Spikes spike : spikes) {
+                if (!spike.isDangerous()) continue;
+                double dx = Math.abs(playerWorldX - spike.getX());
+                double dz = Math.abs(playerWorldZ - spike.getZ());
+                double hitDist = Constants.PLAYER_RADIUS * Constants.CELL_SIZE + 0.5;
+                if (dx<hitDist && dz<hitDist) {
+                    if(invincible>0){
+                        invincible=0;
+                        invul=2;
+                        return false;
+                    }
+                    if(invul>0) return false;
+                    return true;
+                }
+            }
+            for(Potion i: potions){
+                if (!i.isCollected()) {
+                    double dx = playerWorldX - i.getX();
+                    double dz = playerWorldZ - i.getZ();
+                    double distSq = dx * dx + dz * dz;
+                    double pickupDist = Constants.CELL_SIZE * 0.2;
+                    if (distSq < pickupDist * pickupDist) {
+
+                        i.collect();
+                        player.poison();
+                        spawnables.getChildren().remove(i);
+                    }
+                }
+            }
+
+
+        for(Heart i: hearts){
+            if (!i.isCollected()) {
+                double dx = playerWorldX - i.getX();
+                double dz = playerWorldZ - i.getZ();
+                double distSq = dx * dx + dz * dz;
+                double pickupDist = Constants.CELL_SIZE * 0.2;
+                if (distSq < pickupDist * pickupDist) {
+                    i.collect();
+                    player.addLife();
+                    spawnables.getChildren().remove(i);
+
+                }
+            }
+        }
+        for(Shield i: shields){
+            if (!i.isCollected()) {
+                double dx = playerWorldX - i.getX();
+                double dz = playerWorldZ - i.getZ();
+                double distSq = dx * dx + dz * dz;
+                double pickupDist = Constants.CELL_SIZE * 0.2;
+                if (distSq < pickupDist * pickupDist) {
+                    i.collect();
+                    invincible=5;
+                    spawnables.getChildren().remove(i);
+                }
             }
         }
 
-        for (Spikes spike : spikes) {
-            if (!spike.isDangerous()) continue;
-            double dx = Math.abs(playerWorldX - spike.getX());
-            double dz = Math.abs(playerWorldZ - spike.getZ());
-            double hitDist = Constants.PLAYER_RADIUS * Constants.CELL_SIZE + 0.5;
-            if (dx<hitDist && dz<hitDist) {
-                return true;
-            }
-        }
         if (!key.isCollected()) {
             double dx = playerWorldX - key.getX();
             double dz = playerWorldZ - key.getZ();
@@ -294,6 +406,26 @@ public class DungeonRunner extends Application {
                 unlockExitVisual();
                 minimap.removeKey();
             }
+        }
+        if(true){
+            double playerRadius = Constants.PLAYER_RADIUS * Constants.CELL_SIZE;
+            double dx = playerWorldX - p.getPosX();
+            double dz = playerWorldZ - p.getPosY();
+            double distSq = dx * dx + dz * dz;
+            double hitDist = 0.5 + playerRadius;
+            if(distSq < hitDist * hitDist){
+                if(invincible>0){
+                    invincible=0;
+                    invul=2;
+                    return false;
+                }
+                if(invul>0) return false;
+                return true;
+            }
+        }
+        if(doorKey.update(playerWorldX,playerWorldZ)){
+            minimap.removeLever();
+
         }
 
         return false;
@@ -412,6 +544,8 @@ public class DungeonRunner extends Application {
         stage.setScene ( menuScene );
     }
 
+
+
     private void startGame (int[][] mapC ) {
 
         saws.clear ( );
@@ -497,6 +631,9 @@ public class DungeonRunner extends Application {
         this.timer = new AnimationTimer ( ) {
             @Override
             public void handle ( long now ) {
+                lives.setText(String.valueOf(player.getLives()));
+                Random seedGen = new Random();
+                double seed=seedGen.nextDouble();
 
                 if(time<0){
                     time=now;
@@ -504,6 +641,17 @@ public class DungeonRunner extends Application {
                 }
                 double sec = (now - time) / 1_000_000_000.0;
                 seconds+=sec;
+                shieldTime+=sec;
+                shieldSphere.setVisible(invincible > 0);
+                if(shieldTime>1.0){
+                    shieldTime-=1.0;
+                    if(invincible>0) {
+                        invincible--;
+
+                    }
+                    if(invul>0) invul--;
+                }
+
                 if(seconds>=60.0){
                     minutes++;
                     seconds-=60;
@@ -519,6 +667,26 @@ public class DungeonRunner extends Application {
                 updateCameraMount ( );
                 updateTorch ( );
                 minimap.updatePlayer(player);
+
+                if(seed>0.994){
+                    double[] coords = RandomPosition.findRandomOpenPosition(map);
+                    assert coords != null;
+                    if(seed<0.996){
+                        Heart a = new Heart(coords[0],coords[1],0.5);
+                        hearts.add(a);
+                        spawnables.getChildren().add(a.get());
+                    } else if (seed<0.998) {
+                        Shield a = new Shield(coords[0],coords[1],0.5);
+                        shields.add(a);
+                        spawnables.getChildren().add(a.get());
+                    }
+                    else{
+                        Potion a = new Potion(coords[0],coords[1],0.5);
+                        potions.add(a);
+                        spawnables.getChildren().add(a.get());
+                    }
+                }
+
 
                 flicker++;
                 for(Saw i:saws){

@@ -18,6 +18,15 @@ public class Patrol {
     private Group p=new Group();
     private Translate move = new Translate();
 
+
+    public double getPosX() {
+        return posX;
+    }
+
+    public double getPosY() {
+        return posY;
+    }
+
     public Patrol(double posX, double posY){
         this.posX=posX;
         this.posY=posY;
