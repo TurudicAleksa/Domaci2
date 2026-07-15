@@ -23,6 +23,7 @@ public class Minimap {
     private Object [][] map;
     private Group g = new Group();
     private Rectangle end;
+    private Circle key;
     public Minimap(int cols, int rows){
         map = new Object[cols][rows];
         sizeX=cols*20;
@@ -80,5 +81,12 @@ public class Minimap {
     }
     public void unlock(){
         end.setFill(Color.GREEN);
+    }
+    public void addKey(double PosX, double PosY){
+        key=new Circle(PosX*20+10,PosY*20+10,5,Color.YELLOW);
+        g.getChildren().addAll(key);
+    }
+    public void removeKey(){
+        key.setVisible(false);
     }
 }

@@ -10,6 +10,7 @@ import javafx.scene.PointLight;
 import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.*;
@@ -20,6 +21,7 @@ import javafx.stage.Stage;
 
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class DungeonRunner extends Application {
 
@@ -35,25 +37,25 @@ public class DungeonRunner extends Application {
     public Minimap minimap;
     private Box exitBox;
     private Key key;
+    private Stage stage; // NEW: kept so showLevelSelect()/startGame() can swap scenes on it
+    double seconds = 0;
+    double minutes = 0;
+    Patrol p;
 
-    private void buildDungeon ( ) {
+    private void buildDungeon (int[][] mapC ) {
         PhongMaterial wallMaterial = new PhongMaterial ( );
         Image bricks = new Image(getClass().getResourceAsStream("/img/bricks.jpg"));
         wallMaterial.setDiffuseColor ( Constants.WALL_DIFFUSE_COLOR );
         wallMaterial.setSpecularColor ( Constants.WALL_SPECULAR_COLOR );
         wallMaterial.setDiffuseMap(bricks);
 
-
-
-
-
         PhongMaterial floorMaterial = new PhongMaterial();
         floorMaterial.setDiffuseColor(Color.rgb(60, 40, 20));
 
         PhongMaterial ceilingMaterial = new PhongMaterial();
         ceilingMaterial.setDiffuseColor(Color.rgb(25, 25, 45));
-        
-        this.map = new DungeonMap ( Constants.MAP );
+
+        this.map = new DungeonMap ( mapC );
 
         int    rows       = this.map.getRows ( );
         int    columns    = this.map.getCols ( );
@@ -148,25 +150,69 @@ public class DungeonRunner extends Application {
                 }
             }
         }
-        Saw saw1 = new Saw(0 * Constants.CELL_SIZE + Constants.CELL_SIZE,
-                3 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0);
+        int sawx1=0, sawy2=0, sawx2=0, sawy1=0, spx1=0, spy1=0, kx1=0, ky1=0;
+        if(mapC==Constants.MAP){
+            sawx1=0;
+            sawy1=3;
+            sawx2=2;
+            sawy2=3;
+            spx1=1;
+            spy1=2;
+            kx1=2;
+            ky1=6;
+        }
+        if(mapC==Constants.MAP2){
+            sawx1=3;
+            sawy1=5;
+            sawx2=3;
+            sawy2=3;
+            spx1=6;
+            spy1=5;
+            kx1=3;
+            ky1=1;
+        }
+        if(mapC==Constants.MAP3){
+            sawx1=0;
+            sawy1=5;
+            sawx2=2;
+            sawy2=5;
+            spx1=3;
+            spy1=6;
+            kx1=7;
+            ky1=2;
+        }
+        Saw saw1 = new Saw(sawx1 * Constants.CELL_SIZE + Constants.CELL_SIZE,
+                sawy1 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0);
         saws.add(saw1);
         saw1.rotate(180);
-        Saw saw2 = new Saw(2 * Constants.CELL_SIZE,
-                3 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0);
+        Saw saw2 = new Saw(sawx2 * Constants.CELL_SIZE,
+                sawy2 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0);
         saws.add(saw2);
+        if(mapC==Constants.MAP2){
+            saw1.rotate(90);
+            saw2.rotate(270);
+        }
+
         this.world.getChildren().add(saw1.getSaws());
         this.world.getChildren().add(saw2.getSaws());
 
-        Spikes sp1 = new Spikes(1 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0,
-                2 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0);
+        Spikes sp1 = new Spikes(spx1 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0,
+                spy1 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0);
         spikes.add(sp1);
         this.world.getChildren().add(sp1.get());
 
-        key = new Key(2 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0,
-                6 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0,
+        key = new Key(kx1 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0,
+                ky1 * Constants.CELL_SIZE + Constants.CELL_SIZE / 2.0,
                 0);
         this.world.getChildren().add(key.get());
+        minimap.addKey(kx1,ky1);
+
+        p = new Patrol(1 * Constants.CELL_SIZE+ Constants.CELL_SIZE / 2.0,
+                2 * Constants.CELL_SIZE+ Constants.CELL_SIZE / 2.0);
+        this.world.getChildren().add(p.get());
+        double[] y = {2,3,4,4,4,3,2};
+        double[] x = {1,1,1,2,1,1,1};
+        p.addPath(x,y);
 
 
 
@@ -176,7 +222,8 @@ public class DungeonRunner extends Application {
             PhongMaterial exitMaterial = new PhongMaterial();
             exitMaterial.setDiffuseColor ( Constants.EXIT_DIFFUSE_COLOR );
             exitMaterial.setSpecularColor ( Constants.EXIT_SPECULAR_COLOR );
-            exitBox.setMaterial(exitMaterial); // green
+            exitBox.setMaterial(exitMaterial);
+            minimap.unlock();
         }
     }
 
@@ -233,7 +280,7 @@ public class DungeonRunner extends Application {
             double dz = Math.abs(playerWorldZ - spike.getZ());
             double hitDist = Constants.PLAYER_RADIUS * Constants.CELL_SIZE + 0.5;
             if (dx<hitDist && dz<hitDist) {
-               return true;
+                return true;
             }
         }
         if (!key.isCollected()) {
@@ -245,6 +292,7 @@ public class DungeonRunner extends Application {
                 key.collect();
                 player.unlockExit();
                 unlockExitVisual();
+                minimap.removeKey();
             }
         }
 
@@ -327,17 +375,56 @@ public class DungeonRunner extends Application {
             this.torch.setConstantAttenuation(2);
         }
         if(flicker>0) this.torch.setConstantAttenuation(1.0);
-        //else this.torch.setConstantAttenuation(1);
 
         this.torch.getTransforms ( ).setAll ( torchTranslate );
     }
     private long time=-1;
-    @Override
-    public void start ( Stage stage ) {
+
+    private void showLevelSelect ( ) {
+        List<String> strings = new ArrayList<>();
+        strings.add("Level 1");
+        strings.add("Level 2");
+        strings.add("Level 3");
+        SelectionScreen selection = new SelectionScreen (
+                "Choose a Level",
+                strings,
+                Constants.SCREEN_WIDTH,
+                Constants.SCREEN_HEIGHT
+        );
+
+        Scene menuScene = new Scene ( selection, Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT );
+
+        menuScene.setOnKeyPressed ( e -> {
+            if ( e.getCode ( ) == KeyCode.ENTER || e.getCode ( ) == KeyCode.SPACE ) {
+                switch(selection.getSelectedIndex()){
+                    case 0: startGame(Constants.MAP);
+                    break;
+                    case 1: startGame(Constants.MAP2);
+                    break;
+                    case 2: startGame(Constants.MAP3);
+                }
+
+            } else {
+                selection.handleKey ( e.getCode ( ) );
+            }
+        } );
+
+        stage.setScene ( menuScene );
+    }
+
+    private void startGame (int[][] mapC ) {
+
+        saws.clear ( );
+        spikes.clear ( );
+        flicker = 0;
+        seconds = 0;
+        minutes = 0;
+        time = -1;
+
         this.player = new Player ( Constants.PLAYER_START_X, Constants.PLAYER_START_Y );
         this.world = new Group ( );
 
-        buildDungeon ( );
+        buildDungeon ( mapC);
         setupLighting ( );
         setupCamera ( );
 
@@ -389,34 +476,46 @@ public class DungeonRunner extends Application {
         endScreen.getChildren().addAll(bx,win,loss);
         endScreen.setOpacity(0);
 
-        javafx.scene.layout.StackPane root = new javafx.scene.layout.StackPane ( subScene, minimapGroup,livesC, endScreen );
+
+        Group timerG = new Group();
+        Text timec = new Text("00:00");
+        timec.setScaleX(3);
+        timec.setScaleY(3);
+        timec.setFill(Color.WHITE);
+        timerG.getChildren().addAll(timec);
+
+        javafx.scene.layout.StackPane root = new javafx.scene.layout.StackPane ( subScene, minimapGroup,livesC, endScreen, timerG );
         javafx.scene.layout.StackPane.setAlignment ( minimapGroup, Pos.BOTTOM_RIGHT );
         javafx.scene.layout.StackPane.setAlignment ( endScreen, Pos.CENTER );
         javafx.scene.layout.StackPane.setAlignment ( livesC, Pos.TOP_LEFT );
+        javafx.scene.layout.StackPane.setAlignment ( timerG, Pos.TOP_RIGHT );
 
         Scene scene = new Scene ( root, Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT );
-        /*Scene scene = new Scene (
-                this.world,
-                Constants.SCREEN_WIDTH,
-                Constants.SCREEN_HEIGHT,
-                true,
-                SceneAntialiasing.BALANCED
-        );*/
-        //scene.setCamera ( this.camera );
 
         setupInput ( scene );
 
         this.timer = new AnimationTimer ( ) {
             @Override
             public void handle ( long now ) {
+
                 if(time<0){
                     time=now;
                     return;
                 }
                 double sec = (now - time) / 1_000_000_000.0;
+                seconds+=sec;
+                if(seconds>=60.0){
+                    minutes++;
+                    seconds-=60;
+                }
+                String formattedSec = String.format("%02d", (int)seconds);
+                String formattedMin = String.format("%02d", (int)minutes);
+                timec.setText(formattedMin+":"+formattedSec);
                 time=now;
 
                 player.update ( map );
+                p.update(sec);
+
                 updateCameraMount ( );
                 updateTorch ( );
                 minimap.updatePlayer(player);
@@ -449,9 +548,17 @@ public class DungeonRunner extends Application {
         };
         timer.start ( );
 
-        stage.setTitle ( "Beg iz tamnice" );
         stage.setScene ( scene );
+    }
+
+    @Override
+    public void start ( Stage stage ) {
+        this.stage = stage;
+        stage.setTitle ( "Beg iz tamnice" );
         stage.setResizable ( false );
+
+        showLevelSelect ( );
+
         stage.show ( );
     }
 
