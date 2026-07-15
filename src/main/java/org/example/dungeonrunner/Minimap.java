@@ -25,6 +25,7 @@ public class Minimap {
     private Rectangle end;
     private Circle key;
     private Circle lever;
+    private Rectangle door;
     public Minimap(int cols, int rows){
         map = new Object[cols][rows];
         sizeX=cols*20;
@@ -94,5 +95,10 @@ public class Minimap {
         lever = new Circle(posX*20+10,posY*20+10,5,col);
         g.getChildren().add(lever);
     }
-    public void removeLever() {lever.setVisible(false);}
+    public void removeLever() {lever.setVisible(false); door.setVisible(false);}
+    public void addDoor(double PosX, double PosY, Color col){
+        door = new Rectangle(20*PosX,20*PosY,19,19);
+        door.setFill(col);
+        g.getChildren().add(door);
+    }
 }

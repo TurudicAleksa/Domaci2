@@ -173,8 +173,8 @@ public class DungeonRunner extends Application {
             sawy2=3;
             spx1=1;
             spy1=2;
-            kx1=2;
-            ky1=6;
+            kx1=7;
+            ky1=2;
             px1=5;
             py1=2;
             dx=4;
@@ -258,6 +258,7 @@ public class DungeonRunner extends Application {
         doorKey.setDoorPosition(dx, dy);
         doorKey.setLeverPosition((int)l[0], (int)l[1]);
         minimap.addLever((int)l[0], (int)l[1],doorKey.getColor());
+        minimap.addDoor(dx,dy,doorKey.getColor());
         this.world.getChildren().add(doorKey.get());
 
         player.setDoor(doorKey);
