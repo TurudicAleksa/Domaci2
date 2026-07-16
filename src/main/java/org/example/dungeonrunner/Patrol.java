@@ -32,7 +32,6 @@ public class Patrol {
         this.posY=posY;
         body = new Sphere(0.5);
         body.setMaterial(new PhongMaterial(Color.RED));
-        //body.getTransforms().addAll(new Translate(posX,0.2,posY));
         p.getChildren().add(body);
         move.setX(posX);
         move.setZ(posY);

@@ -11,6 +11,7 @@ import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.*;
@@ -528,12 +529,12 @@ public class DungeonRunner extends Application {
         Scene menuScene = new Scene ( selection, Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT );
 
         menuScene.setOnKeyPressed ( e -> {
-            if ( e.getCode ( ) == KeyCode.ENTER || e.getCode ( ) == KeyCode.SPACE ) {
+            if ( e.getCode ( ) == KeyCode.ENTER || e.getCode ( ) == KeyCode.SPACE || e.getCode() == KeyCode.Y) {
                 switch(selection.getSelectedIndex()){
                     case 0: startGame(Constants.MAP);
-                    break;
+                        break;
                     case 1: startGame(Constants.MAP2);
-                    break;
+                        break;
                     case 2: startGame(Constants.MAP3);
                 }
 
@@ -543,6 +544,7 @@ public class DungeonRunner extends Application {
         } );
 
         stage.setScene ( menuScene );
+
     }
 
 
@@ -729,6 +731,7 @@ public class DungeonRunner extends Application {
         showLevelSelect ( );
 
         stage.show ( );
+        stage.requestFocus();
     }
 
     public static void main ( String[] args ) {

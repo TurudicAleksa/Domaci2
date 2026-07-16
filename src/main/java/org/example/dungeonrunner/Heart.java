@@ -14,7 +14,7 @@ public class Heart {
     private double positionZ;
     private double baseY;
 
-    private double spinSpeed = 60;   // degrees per second
+    private double spinSpeed = 60;
     private double bobSpeed = 2.5;
     private double time = 0;
 

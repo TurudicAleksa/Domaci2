@@ -29,7 +29,7 @@ public class Potion {
         this.positionZ = positionZ;
         this.baseY = baseY;
 
-        PhongMaterial pot = new PhongMaterial(Color.rgb(140, 40, 180)); // pot purple
+        PhongMaterial pot = new PhongMaterial(Color.rgb(140, 40, 180));
         pot.setSpecularColor(Color.MAGENTA);
 
         Cylinder bodyShape = new Cylinder(SCALE * 0.3, SCALE * 0.6);

@@ -12,7 +12,7 @@ public class Shield {
     private double positionZ;
     private double baseY;
 
-    private double spinSpeed = 150;  // faster spin than Key/Heart — reads as a spinning coin
+    private double spinSpeed = 150;
     private double bobSpeed = 2.0;
     private double time = 0;
 
@@ -32,11 +32,8 @@ public class Shield {
         PhongMaterial blue = new PhongMaterial(Color.DEEPSKYBLUE);
         blue.setSpecularColor(Color.WHITE);
 
-        // thin flat cylinder to read as a coin
         Cylinder coin = new Cylinder(SCALE * 0.5, SCALE * 0.15);
         coin.setMaterial(blue);
-        // Cylinder's default axis is vertical (Y) already, so no extra rotation needed
-        // for it to appear "flat like a coin" when spun around Y — matches Key's approach
 
         g.getChildren().add(coin);
 
